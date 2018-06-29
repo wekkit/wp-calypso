@@ -18,6 +18,7 @@ const babelEnv = [
 		},
 		exclude: [ 'transform-classes', 'transform-template-literals' ], // transform-classes is added manually later.
 		useBuiltIns: 'entry',
+		ignoreBrowserslistConfig: true, // we have a browserslist in package.json that's really for autoprefixer
 	},
 ];
 
@@ -25,7 +26,8 @@ if ( ! isCalypsoClient ) {
 	babelEnv[ 1 ].targets = {
 		node: 'current',
 	};
-	delete babelEnv.exclude;
+	babelEnv[ 1 ].useBuiltIns = 'usage';
+	delete babelEnv[ 1 ].exclude;
 }
 
 const config = {
