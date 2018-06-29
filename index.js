@@ -1,7 +1,5 @@
 /* eslint-disable no-console */
 
-require( '@babel/polyfill' );
-
 /**
  * External dependencies.
  */
