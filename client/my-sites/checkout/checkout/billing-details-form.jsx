@@ -5,6 +5,7 @@
 import React, { PureComponent } from 'react';
 import { connect } from 'react-redux';
 import { localize } from 'i18n-calypso';
+import classNames from 'classnames';
 import debugFactory from 'debug';
 import { first, includes, indexOf, intersection, isEqual, last, map } from 'lodash';
 
@@ -14,11 +15,12 @@ import { first, includes, indexOf, intersection, isEqual, last, map } from 'loda
 import QueryContactDetailsCache from 'components/data/query-contact-details-cache';
 import QueryTldValidationSchemas from 'components/data/query-tld-validation-schemas';
 import PrivacyProtection from './privacy-protection';
+import PaymentBox from './payment-box';
 import FormButton from 'components/forms/form-button';
 import SecurePaymentFormPlaceholder from './secure-payment-form-placeholder.jsx';
 import wp from 'lib/wp';
 import config from 'config';
-import ContactDetailsFormFields from 'components/domains/contact-details-form-fields';
+import BillingDetailsFormFields from './billing-details-form-fields';
 import ExtraInfoForm, {
 	tldsWithAdditionalDetailsForms,
 } from 'components/domains/registrant-extra-info';
@@ -36,7 +38,7 @@ import { recordTracksEvent } from 'state/analytics/actions';
 const debug = debugFactory( 'calypso:my-sites:upgrades:checkout:domain-details' );
 const wpcom = wp.undocumented();
 
-export class DomainDetailsForm extends PureComponent {
+export class BillingDetailsForm extends PureComponent {
 	constructor( props ) {
 		super( props );
 		const steps = [ 'mainForm', ...this.getTldsWithAdditionalForm() ];
@@ -173,20 +175,13 @@ export class DomainDetailsForm extends PureComponent {
 		this.props.updateContactDetailsCache( newContactDetailsValues );
 	};
 
-	renderDomainContactDetailsFields() {
+	renderBillingContactDetailsFields() {
 		const { contactDetails, translate, userCountryCode } = this.props;
 		const labelTexts = {
-			submitButton: this.getSubmitButtonText(),
-			organization: translate(
-				'Registering this domain for a company? + Add Organization Name',
-				'Registering these domains for a company? + Add Organization Name',
-				{
-					count: this.getNumberOfDomainRegistrations(),
-				}
-			),
+			organization: translate( '+ Add Organization Name' ),
 		};
 		return (
-			<ContactDetailsFormFields
+			<BillingDetailsFormFields
 				userCountryCode={ userCountryCode }
 				contactDetails={ contactDetails }
 				needsFax={ this.needsFax() }
@@ -201,7 +196,7 @@ export class DomainDetailsForm extends PureComponent {
 	}
 
 	renderDetailsForm() {
-		return <div>{ this.renderDomainContactDetailsFields() }</div>;
+		return <form>{ this.renderBillingContactDetailsFields() }</form>;
 	}
 
 	renderExtraDetailsForm( tld ) {
@@ -249,6 +244,33 @@ export class DomainDetailsForm extends PureComponent {
 	}
 
 	render() {
+		const classSet = classNames( {
+			'domain-details': true,
+			selected: true,
+		} );
+
+		let title;
+		let message;
+		// TODO: gather up tld specific stuff
+		if ( this.state.currentStep === 'fr' ) {
+			title = this.props.translate( '.FR Registration' );
+		} else if ( this.needsOnlyGoogleAppsDetails() ) {
+			title = this.props.translate( 'G Suite Account Information' );
+		} else if ( true ) {
+			//@TODO Need to figure out how to display this only if domains are in the cart
+			title = this.props.translate( 'Billing & Domain Contact Information' );
+			message = this.props.translate(
+				'For your convenience, we have pre-filled your WordPress.com contact information. Please ' +
+					"review this to be sure it's correct."
+			);
+		} else {
+			title = this.props.translate( 'Billing Information' );
+			message = this.props.translate(
+				'For your convenience, we have pre-filled your WordPress.com contact information. Please ' +
+					"review this to be sure it's correct."
+			);
+		}
+
 		const renderPrivacy =
 			( cartItems.hasDomainRegistration( this.props.cart ) ||
 				cartItems.hasTransferProduct( this.props.cart ) ) &&
@@ -258,19 +280,22 @@ export class DomainDetailsForm extends PureComponent {
 			<div>
 				<QueryTldValidationSchemas tlds={ this.getTldsWithAdditionalForm() } />
 				{ renderPrivacy && this.renderPrivacySection() }
-				{ this.renderCurrentForm() }
+				<PaymentBox currentPage={ this.state.currentStep } classSet={ classSet } title={ title }>
+					{ message && <p>{ message }</p> }
+					{ this.renderCurrentForm() }
+				</PaymentBox>
 			</div>
 		);
 	}
 }
 
-export class DomainDetailsFormContainer extends PureComponent {
+export class BillingDetailsFormContainer extends PureComponent {
 	render() {
 		return (
 			<div>
 				<QueryContactDetailsCache />
 				{ this.props.contactDetails ? (
-					<DomainDetailsForm { ...this.props } />
+					<BillingDetailsForm { ...this.props } />
 				) : (
 					<SecurePaymentFormPlaceholder />
 				) }
@@ -285,4 +310,4 @@ export default connect(
 		recordTracksEvent,
 		updateContactDetailsCache,
 	}
-)( localize( DomainDetailsFormContainer ) );
+)( localize( BillingDetailsFormContainer ) );
