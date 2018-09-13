@@ -33,7 +33,6 @@ import PaymentBox from './payment-box';
 import isPresalesChatAvailable from 'state/happychat/selectors/is-presales-chat-available';
 import getCountries from 'state/selectors/get-countries';
 import QueryPaymentCountries from 'components/data/query-countries/payments';
-import BillingDetailsForm from './billing-details-form';
 
 /**
  * Module variables
@@ -434,7 +433,6 @@ const SecurePaymentForm = createReactClass( {
 
 		return (
 			<div className="secure-payment-form">
-				<BillingDetailsForm />
 				{ this.renderGetDotBlogNotice() }
 				{ this.renderPaymentBox() }
 			</div>

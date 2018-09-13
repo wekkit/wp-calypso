@@ -49,6 +49,7 @@ import InfoPopover from 'components/info-popover';
 import { isMobile } from 'lib/viewport';
 import DomainDetailsForm from './domain-details-form';
 import { cartItems } from 'lib/cart-values';
+import { addPrivacyToAllDomains, removePrivacyFromAllDomains } from 'lib/upgrades/actions';
 
 const CONTACT_DETAILS_FORM_FIELDS = [
 	'firstName',
@@ -86,6 +87,7 @@ export class ContactDetailsFormFields extends Component {
 		userCountryCode: PropTypes.string,
 		needsOnlyGoogleAppsDetails: PropTypes.bool,
 		hasCountryStates: PropTypes.bool,
+		cart: PropTypes.object,
 	};
 
 	static defaultProps = {
@@ -114,6 +116,8 @@ export class ContactDetailsFormFields extends Component {
 			form: null,
 			submissionCount: 0,
 			showDomainContactDetails: false,
+			cart: this.props.cart,
+			handlePrivacy: this.allDomainItemsHavePrivacy(),
 		};
 
 		this.inputRefs = {};
@@ -127,11 +131,13 @@ export class ContactDetailsFormFields extends Component {
 	shouldComponentUpdate( nextProps, nextState ) {
 		return (
 			nextState.showDomainContactDetails !== this.state.showDomainContactDetails ||
+			nextState.handlePrivacy !== this.state.handlePrivacy ||
 			nextState.phoneCountryCode !== this.state.phoneCountryCode ||
 			! isEqual( nextState.form, this.state.form ) ||
 			! isEqual( nextProps.labelTexts, this.props.labelTexts ) ||
 			! isEqual( nextProps.countriesList, this.props.countriesList ) ||
 			! isEqual( nextProps.hasCountryStates, this.props.hasCountryStates ) ||
+			! isEqual( nextProps.cart, this.props.cart ) ||
 			( nextProps.needsFax !== this.props.needsFax ||
 				nextProps.needsOnlyGoogleAppsDetails !== this.props.needsOnlyGoogleAppsDetails )
 		);
@@ -416,35 +422,95 @@ export class ContactDetailsFormFields extends Component {
 		this.setState( { showDomainContactDetails: ! this.state.showDomainContactDetails } );
 	};
 
+	handleDomainPrivacyChange = () => {
+		const { handlePrivacy } = this.state;
+
+		if ( false === handlePrivacy ) {
+			this.setState( { handlePrivacy: true } );
+			addPrivacyToAllDomains();
+		} else {
+			this.setState( { handlePrivacy: false } );
+			removePrivacyFromAllDomains();
+		}
+	};
+
 	getNumberOfDomainRegistrations() {
 		return cartItems.getDomainRegistrations( this.props.cart ).length;
+	}
+
+	needsDomainDetails() {
+		const cart = this.props.cart;
+
+		if ( cart && cartItems.hasOnlyRenewalItems( cart ) ) {
+			return false;
+		}
+
+		return (
+			cart &&
+			( cartItems.hasDomainRegistration( cart ) ||
+				cartItems.hasGoogleApps( cart ) ||
+				cartItems.hasTransferProduct( cart ) )
+		);
+	}
+
+	allDomainProductsSupportPrivacy() {
+		return cartItems.hasOnlyDomainProductsWithPrivacySupport( this.props.cart );
+	}
+
+	allDomainItemsHavePrivacy() {
+		return (
+			cartItems.getDomainRegistrationsWithoutPrivacy( this.props.cart ).length === 0 &&
+			cartItems.getDomainTransfersWithoutPrivacy( this.props.cart ).length === 0
+		);
+	}
+
+	renderDomainPrivacy() {
+		const { cart, translate } = this.props;
+		const { handlePrivacy } = this.state;
+		const renderPrivacy =
+			( cartItems.hasDomainRegistration( cart ) || cartItems.hasTransferProduct( cart ) ) &&
+			this.allDomainProductsSupportPrivacy();
+
+		if ( ! renderPrivacy ) {
+			return false;
+		}
+
+		return (
+			<label className="checkout__domain-privacy-label">
+				<FormCheckbox
+					checked={ handlePrivacy }
+					className="checkout__domain-privacy"
+					onChange={ this.handleDomainPrivacyChange.bind( this ) }
+				/>
+				<span>
+					{ translate( 'Register my domain with privacy protection (recommended)' ) }
+					<InfoPopover
+						className="checkout__item-tip-info"
+						position={ isMobile() ? 'left' : 'right' }
+					>
+						{ translate(
+							'Protects your identity and prevents spam by keeping your contact information off the internet.'
+						) }
+					</InfoPopover>
+				</span>
+			</label>
+		);
 	}
 
 	renderDomainDetailsFields() {
 		const { translate } = this.props;
 		const { showDomainContactDetails } = this.state;
 
-		//@TODO Need to figure out how to display this only if domains are in the cart
+		if ( ! this.needsDomainDetails() ) {
+			return false;
+		}
 
 		return (
 			<div className="checkout__domain-registration-information">
 				<div className="checkout__domain-registration-information-title">
 					{ translate( 'Domain Registration Information' ) }
 				</div>
-				<label className="checkout__domain-privacy-label">
-					<FormCheckbox defaultChecked="true" className="checkout__domain-privacy" />
-					<span>
-						{ translate( 'Register my domain with privacy protection (recommended)' ) }
-						<InfoPopover
-							className="checkout__item-tip-info"
-							position={ isMobile() ? 'left' : 'right' }
-						>
-							{ translate(
-								'Protects your identity and prevents spam by keeping your contact information off the internet.'
-							) }
-						</InfoPopover>
-					</span>
-				</label>
+				{ this.renderDomainPrivacy() }
 				<label className="checkout__different-domain-details-label">
 					<FormCheckbox
 						defaultChecked={ ! showDomainContactDetails }

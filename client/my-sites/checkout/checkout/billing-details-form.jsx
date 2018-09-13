@@ -14,7 +14,6 @@ import { first, includes, indexOf, intersection, isEqual, last, map } from 'loda
  */
 import QueryContactDetailsCache from 'components/data/query-contact-details-cache';
 import QueryTldValidationSchemas from 'components/data/query-tld-validation-schemas';
-import PrivacyProtection from './privacy-protection';
 import PaymentBox from './payment-box';
 import FormButton from 'components/forms/form-button';
 import SecurePaymentFormPlaceholder from './secure-payment-form-placeholder.jsx';
@@ -24,12 +23,7 @@ import BillingDetailsFormFields from './billing-details-form-fields';
 import ExtraInfoForm, {
 	tldsWithAdditionalDetailsForms,
 } from 'components/domains/registrant-extra-info';
-import {
-	addPrivacyToAllDomains,
-	removePrivacyFromAllDomains,
-	setDomainDetails,
-	addGoogleAppsRegistrationData,
-} from 'lib/upgrades/actions';
+import { setDomainDetails, addGoogleAppsRegistrationData } from 'lib/upgrades/actions';
 import { cartItems } from 'lib/cart-values';
 import getContactDetailsCache from 'state/selectors/get-contact-details-cache';
 import { updateContactDetailsCache } from 'state/domains/management/actions';
@@ -97,6 +91,21 @@ export class BillingDetailsForm extends PureComponent {
 		this.setState( { currentStep: newStep } );
 	}
 
+	needsDomainDetails() {
+		const cart = this.props.cart;
+
+		if ( cart && cartItems.hasOnlyRenewalItems( cart ) ) {
+			return false;
+		}
+
+		return (
+			cart &&
+			( cartItems.hasDomainRegistration( cart ) ||
+				cartItems.hasGoogleApps( cart ) ||
+				cartItems.hasTransferProduct( cart ) )
+		);
+	}
+
 	getDomainNames = () =>
 		map(
 			[
@@ -132,17 +141,6 @@ export class BillingDetailsForm extends PureComponent {
 		);
 	}
 
-	allDomainProductsSupportPrivacy() {
-		return cartItems.hasOnlyDomainProductsWithPrivacySupport( this.props.cart );
-	}
-
-	allDomainItemsHavePrivacy() {
-		return (
-			cartItems.getDomainRegistrationsWithoutPrivacy( this.props.cart ).length === 0 &&
-			cartItems.getDomainTransfersWithoutPrivacy( this.props.cart ).length === 0
-		);
-	}
-
 	getSubmitButtonText() {
 		return this.hasAnotherStep()
 			? this.props.translate( 'Continue' )
@@ -157,17 +155,6 @@ export class BillingDetailsForm extends PureComponent {
 			>
 				{ this.getSubmitButtonText() }
 			</FormButton>
-		);
-	}
-
-	renderPrivacySection() {
-		return (
-			<PrivacyProtection
-				checkPrivacyRadio={ this.allDomainItemsHavePrivacy() }
-				cart={ this.props.cart }
-				onRadioSelect={ this.handleRadioChange }
-				productsList={ this.props.productsList }
-			/>
 		);
 	}
 
@@ -191,6 +178,7 @@ export class BillingDetailsForm extends PureComponent {
 				eventFormName="Checkout Form"
 				onValidate={ this.validate }
 				labelTexts={ labelTexts }
+				cart={ this.props.cart }
 			/>
 		);
 	}
@@ -207,10 +195,6 @@ export class BillingDetailsForm extends PureComponent {
 		);
 	}
 
-	handleRadioChange = enable => {
-		this.setPrivacyProtectionSubscriptions( enable );
-	};
-
 	handleSubmitButtonClick = event => {
 		if ( event && event.preventDefault ) {
 			event.preventDefault();
@@ -226,14 +210,6 @@ export class BillingDetailsForm extends PureComponent {
 		debug( 'finish: allFieldValues:', allFieldValues );
 		setDomainDetails( allFieldValues );
 		addGoogleAppsRegistrationData( allFieldValues );
-	}
-
-	setPrivacyProtectionSubscriptions( enable ) {
-		if ( enable ) {
-			addPrivacyToAllDomains();
-		} else {
-			removePrivacyFromAllDomains();
-		}
 	}
 
 	renderCurrentForm() {
@@ -256,7 +232,7 @@ export class BillingDetailsForm extends PureComponent {
 			title = this.props.translate( '.FR Registration' );
 		} else if ( this.needsOnlyGoogleAppsDetails() ) {
 			title = this.props.translate( 'G Suite Account Information' );
-		} else if ( true ) {
+		} else if ( this.needsDomainDetails() ) {
 			//@TODO Need to figure out how to display this only if domains are in the cart
 			title = this.props.translate( 'Billing & Domain Contact Information' );
 			message = this.props.translate(
@@ -271,15 +247,9 @@ export class BillingDetailsForm extends PureComponent {
 			);
 		}
 
-		const renderPrivacy =
-			( cartItems.hasDomainRegistration( this.props.cart ) ||
-				cartItems.hasTransferProduct( this.props.cart ) ) &&
-			this.allDomainProductsSupportPrivacy();
-
 		return (
 			<div>
 				<QueryTldValidationSchemas tlds={ this.getTldsWithAdditionalForm() } />
-				{ renderPrivacy && this.renderPrivacySection() }
 				<PaymentBox currentPage={ this.state.currentStep } classSet={ classSet } title={ title }>
 					{ message && <p>{ message }</p> }
 					{ this.renderCurrentForm() }
