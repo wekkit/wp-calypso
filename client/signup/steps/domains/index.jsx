@@ -301,6 +301,7 @@ class DomainsStep extends React.Component {
 				surveyVertical={ this.props.surveyVertical }
 				suggestion={ get( this.props, 'queryObject.new', '' ) }
 				designType={ this.getDesignType() }
+				vendor="domainsbot"
 			/>
 		);
 	};
@@ -415,9 +416,18 @@ class DomainsStep extends React.Component {
 
 	render() {
 		const { translate } = this.props;
-		const backUrl = this.props.stepSectionName
-			? getStepUrl( this.props.flowName, this.props.stepName, undefined, getLocaleSlug() )
-			: undefined;
+		let backUrl = undefined;
+
+		if ( 'transfer' === this.props.stepSectionName || 'mapping' === this.props.stepSectionName ) {
+			backUrl = getStepUrl(
+				this.props.flowName,
+				this.props.stepName,
+				'use-your-domain',
+				getLocaleSlug()
+			);
+		} else if ( this.props.stepSectionName ) {
+			backUrl = getStepUrl( this.props.flowName, this.props.stepName, undefined, getLocaleSlug() );
+		}
 
 		const fallbackSubHeaderText = this.getSubHeaderText();
 
