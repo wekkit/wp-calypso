@@ -117,7 +117,6 @@ export class ContactDetailsFormFields extends Component {
 			submissionCount: 0,
 			showDomainContactDetails: false,
 			cart: this.props.cart,
-			handlePrivacy: this.allDomainItemsHavePrivacy(),
 		};
 
 		this.inputRefs = {};
@@ -131,7 +130,6 @@ export class ContactDetailsFormFields extends Component {
 	shouldComponentUpdate( nextProps, nextState ) {
 		return (
 			nextState.showDomainContactDetails !== this.state.showDomainContactDetails ||
-			nextState.handlePrivacy !== this.state.handlePrivacy ||
 			nextState.phoneCountryCode !== this.state.phoneCountryCode ||
 			! isEqual( nextState.form, this.state.form ) ||
 			! isEqual( nextProps.labelTexts, this.props.labelTexts ) ||
@@ -422,14 +420,10 @@ export class ContactDetailsFormFields extends Component {
 		this.setState( { showDomainContactDetails: ! this.state.showDomainContactDetails } );
 	};
 
-	handleDomainPrivacyChange = () => {
-		const { handlePrivacy } = this.state;
-
-		if ( false === handlePrivacy ) {
-			this.setState( { handlePrivacy: true } );
+	handleDomainPrivacyChange = event => {
+		if ( true === event.target.checked ) {
 			addPrivacyToAllDomains();
 		} else {
-			this.setState( { handlePrivacy: false } );
 			removePrivacyFromAllDomains();
 		}
 	};
@@ -466,7 +460,6 @@ export class ContactDetailsFormFields extends Component {
 
 	renderDomainPrivacy() {
 		const { cart, translate } = this.props;
-		const { handlePrivacy } = this.state;
 		const renderPrivacy =
 			( cartItems.hasDomainRegistration( cart ) || cartItems.hasTransferProduct( cart ) ) &&
 			this.allDomainProductsSupportPrivacy();
@@ -478,7 +471,7 @@ export class ContactDetailsFormFields extends Component {
 		return (
 			<label className="checkout__domain-privacy-label">
 				<FormCheckbox
-					checked={ handlePrivacy }
+					checked={ this.allDomainItemsHavePrivacy() }
 					className="checkout__domain-privacy"
 					onChange={ this.handleDomainPrivacyChange.bind( this ) }
 				/>
