@@ -165,7 +165,7 @@ export class BillingDetailsForm extends PureComponent {
 	renderBillingContactDetailsFields() {
 		const { contactDetails, translate, userCountryCode } = this.props;
 		const labelTexts = {
-			organization: translate( '+ Add Organization Name' ),
+			organization: translate( '+ Add organization name' ),
 		};
 		return (
 			<BillingDetailsFormFields
