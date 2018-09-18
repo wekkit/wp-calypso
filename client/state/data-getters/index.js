@@ -38,8 +38,10 @@ export const requestActivityActionTypeCounts = ( siteId, { freshness = 10 * 1000
 export const requestActivityLogs = ( siteId, filter, { freshness = 5 * 60 * 1000 } = {} ) => {
 	const group =
 		filter && filter.group && filter.group.length ? sortBy( filter.group ).join( ',' ) : '';
-	const id = `activity-log-${ siteId }-${ group }`;
+	const before = filter && filter.before ? filter.before : '';
+	const after = filter && filter.after ? filter.after : '';
 
+	const id = `activity-log-${ siteId }-${ group }-${ after }-${ before }`;
 	return requestHttpData(
 		id,
 		http(
@@ -135,14 +137,14 @@ export const requestGutenbergDraftPost = ( siteId, draftId ) =>
 		draftId,
 		http(
 			{
-				path: `/sites/${ siteId }/p2/post`,
-				method: 'GET', //this should be a POST, remember
+				path: `/sites/${ siteId }/posts/auto-draft`,
+				method: 'POST',
 				apiNamespace: 'wpcom/v2',
 				body: {}, //this is for a POST verb.
 			},
 			{}
 		),
-		{ formApi: () => data => [ [ draftId, data ] ] }
+		{ fromApi: () => data => [ [ draftId, data ] ] }
 	);
 
 export const requestSitePost = ( siteId, postId ) =>
