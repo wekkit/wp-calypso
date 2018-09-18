@@ -482,7 +482,7 @@ export class ContactDetailsFormFields extends Component {
 						position={ isMobile() ? 'left' : 'right' }
 					>
 						{ translate(
-							'Protects your identity and prevents spam by keeping your contact information off the internet.'
+							'Protects your identity and prevents spam by keeping your contact information off the Internet.'
 						) }
 					</InfoPopover>
 				</span>
