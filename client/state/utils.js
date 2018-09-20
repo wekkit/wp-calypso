@@ -407,6 +407,18 @@ export function createReducer( initialState, handlers, schema ) {
 	return reducer;
 }
 
+function validateReducer( reducer ) {
+	if ( reducer.hasCustomPersistence ) {
+		return reducer;
+	}
+
+	if ( reducer.schema ) {
+		return withSchemaValidation( reducer.schema, reducer );
+	}
+
+	return withoutPersistence( reducer );
+}
+
 /**
  * Returns a single reducing function that ensures that persistence is opt-in.
  * If you don't need state to be stored, simply use this method instead of
@@ -475,17 +487,7 @@ export function createReducer( initialState, handlers, schema ) {
  * @returns {function} - Returns the combined reducer function
  */
 export function combineReducers( reducers ) {
-	const validatedReducers = mapValues( reducers, next => {
-		if ( next.hasCustomPersistence ) {
-			return next;
-		}
-
-		if ( next.schema ) {
-			return withSchemaValidation( next.schema, next );
-		}
-
-		return withoutPersistence( next );
-	} );
+	const validatedReducers = mapValues( reducers, validateReducer );
 
 	const combined = combine( validatedReducers );
 	const combinedWithSerializer = ( state, action ) => {
