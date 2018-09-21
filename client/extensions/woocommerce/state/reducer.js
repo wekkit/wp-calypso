@@ -3,7 +3,7 @@
 /**
  * Internal dependencies
  */
-import { combineReducers } from 'state/utils';
+import { combineReducers, withStorageKey } from 'state/utils';
 import ui from './ui/reducer';
 import sites from './sites/reducer';
 import actionList from './action-list/reducer';
@@ -18,4 +18,4 @@ const reducers = {
 	woocommerceServices,
 };
 
-export default combineReducers( reducers );
+export default withStorageKey( 'woocommerce', combineReducers( reducers ) );

@@ -17,6 +17,7 @@ import Dashboard from './app/dashboard';
 import EmptyContent from 'components/empty-content';
 import { navigation, siteSelection, sites } from 'my-sites/controller';
 import installActionHandlers from './state/data-layer';
+import reducer from './state/reducer';
 import Order from './app/order';
 import OrderCreate from './app/order/create';
 import Orders from './app/orders';
@@ -39,8 +40,10 @@ import StatsController from './app/store-stats/controller';
 import StoreSidebar from './store-sidebar';
 import { tracksStore } from './lib/analytics';
 import { makeLayout, render as clientRender } from 'controller';
+import { reduxAddReducer } from 'lib/redux-bridge';
 
-function initExtension() {
+async function initExtension() {
+	reduxAddReducer( [ 'extensions', 'woocommerce' ], reducer );
 	installActionHandlers();
 }
 

@@ -13,7 +13,7 @@ import { filter, includes, sortBy } from 'lodash';
  * @return {bool} whether store management in calypso is supported
  */
 export const isStoreManagementSupportedInCalypsoForCountry = country => {
-	return includes( [ 'US', 'CA' ], country );
+	return includes( [ 'US', 'CA', 'CZ' ], country );
 };
 
 /**

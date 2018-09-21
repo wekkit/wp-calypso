@@ -16,6 +16,7 @@ import {
 	omit,
 	omitBy,
 	reduce,
+	reduceRight,
 } from 'lodash';
 import { combineReducers as combine } from 'redux'; // eslint-disable-line wpcalypso/import-no-redux-combine-reducers
 import LRU from 'lru';
@@ -329,6 +330,11 @@ export const withSchemaValidation = ( schema, reducer ) => {
 	return wrappedReducer;
 };
 
+export const withStorageKey = ( storageKey, reducer ) => {
+	reducer.storageKey = storageKey;
+	return reducer;
+};
+
 /**
  * Wraps a reducer such that it won't persist any state to the browser's local storage
  *
@@ -486,9 +492,8 @@ function validateReducer( reducer ) {
  * @param {object} reducers - object containing the reducers to merge
  * @returns {function} - Returns the combined reducer function
  */
-export function combineReducers( reducers ) {
-	const validatedReducers = mapValues( reducers, validateReducer );
-
+function createCombinedReducer( validatedReducers ) {
+	console.log( 'combining new reducer from:', Object.keys( validatedReducers ) );
 	const combined = combine( validatedReducers );
 	const combinedWithSerializer = ( state, action ) => {
 		// SERIALIZE needs behavior that's slightly different from `combineReducers` from Redux:
@@ -523,8 +528,41 @@ export function combineReducers( reducers ) {
 
 		return combined( state, action );
 	};
+
 	combinedWithSerializer.hasCustomPersistence = true;
+
+	combinedWithSerializer.addReducer = function( keys, reducer ) {
+		console.log( 'adding new reducer:', keys );
+		const [ key, ...restKeys ] = keys;
+		const existingReducer = validatedReducers[ key ];
+		if ( existingReducer ) {
+			if ( restKeys.length === 0 ) {
+				throw new Error( `Reducer with key '${ key }' is already registered` );
+			}
+
+			if ( ! existingReducer.addReducer ) {
+				throw new Error(
+					"New reducer can be added only into a reducer created with 'combineReducers'"
+				);
+			}
+
+			const newReducer = existingReducer.addReducer( restKeys, reducer );
+			return createCombinedReducer( { ...validatedReducers, [ key ]: newReducer } );
+		}
+
+		const newReducer = reduceRight(
+			restKeys,
+			( subreducer, subkey ) => combineReducers( { [ subkey ]: subreducer } ),
+			validateReducer( reducer )
+		);
+		return createCombinedReducer( { ...validatedReducers, [ key ]: newReducer } );
+	};
+
 	return combinedWithSerializer;
+}
+
+export function combineReducers( reducers ) {
+	return createCombinedReducer( mapValues( reducers, validateReducer ) );
 }
 
 /**

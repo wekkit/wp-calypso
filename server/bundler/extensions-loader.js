@@ -51,7 +51,9 @@ function getReducersAsync( extensionDirs = [] ) {
 }
 
 function getExtensionsModuleAsync( extensionDirs ) {
-	return getReducersAsync( extensionDirs ).then( generateExtensionsModuleString );
+	return getReducersAsync( extensionDirs.filter( d => d !== 'woocommerce' ) ).then(
+		generateExtensionsModuleString
+	);
 }
 
 module.exports = function( content ) {

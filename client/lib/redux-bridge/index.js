@@ -48,6 +48,10 @@ export function reduxDispatch( ...args ) {
 	return reduxStore.dispatch( ...args );
 }
 
+export function reduxAddReducer( key, reducer ) {
+	return reduxStore.addReducer( key, reducer );
+}
+
 function markedFluxAction( action ) {
 	return Object.assign( {}, action, { type: `FLUX_${ action.type }` } );
 }

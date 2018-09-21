@@ -5,7 +5,7 @@
  */
 
 import debugModule from 'debug';
-import { pick, throttle } from 'lodash';
+import { map, pick, throttle } from 'lodash';
 
 /**
  * Internal dependencies
@@ -39,7 +39,8 @@ function getInitialServerState() {
 
 function serialize( state ) {
 	const serializedState = reducer( state, { type: SERIALIZE } );
-	return Object.assign( serializedState, { _timestamp: Date.now() } );
+	const _timestamp = Date.now();
+	return { root: Object.assign( serializedState, { _timestamp } ) };
 }
 
 function deserialize( state ) {
@@ -165,7 +166,13 @@ export function persistOnChange( reduxStore, serializeState = serialize ) {
 
 			state = nextState;
 
-			localforage.setItem( reduxStateKey, serializeState( state ) ).catch( setError => {
+			const serializedState = serializeState( state );
+
+			Promise.all(
+				map( serializedState, ( stateForKey, key ) =>
+					localforage.setItem( reduxStateKey + ':' + key, stateForKey )
+				)
+			).catch( setError => {
 				debug( 'failed to set redux-store state', setError );
 			} );
 		},
