@@ -124,8 +124,7 @@ export function fetchState( siteId ) {
 		.catch( apiFailure );
 }
 
-// createmapAuthorAction
-export const mapAuthor = ( importerId, sourceAuthor, targetAuthor ) => ( {
+export const createMapAuthorAction = ( importerId, sourceAuthor, targetAuthor ) => ( {
 	type: IMPORTS_AUTHORS_SET_MAPPING,
 	importerId,
 	sourceAuthor,

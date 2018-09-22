@@ -13,7 +13,7 @@ import { has, omit } from 'lodash';
 /**
  * Internal dependencies
  */
-import { mapAuthor, startImporting } from 'lib/importer/actions';
+import { createMapAuthorAction, startImporting } from 'lib/importer/actions';
 import { appStates } from 'state/imports/constants';
 import { connectDispatcher } from './dispatcher-converter';
 import ProgressBar from 'components/progress-bar';
@@ -283,7 +283,7 @@ class ImportingPane extends React.PureComponent {
 const mapFluxDispatchToProps = dispatch => ( {
 	mapAuthorFor: importerId => ( source, target ) =>
 		setTimeout( () => {
-			dispatch( mapAuthor( importerId, source, target ) );
+			dispatch( createMapAuthorAction( importerId, source, target ) );
 		}, 0 ),
 } );
 

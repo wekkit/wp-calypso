@@ -22,7 +22,12 @@ const wpcom = wpLib.undocumented();
 
 import { toApi, fromApi } from 'lib/importer/common';
 
-import { startMappingAuthors, startImporting, mapAuthor, finishUpload } from 'lib/importer/actions';
+import {
+	startMappingAuthors,
+	startImporting,
+	createMapAuthorAction,
+	finishUpload,
+} from 'lib/importer/actions';
 import user from 'lib/user';
 
 import { appStates } from 'state/imports/constants';
@@ -457,7 +462,7 @@ class SiteImporterInputPane extends React.Component {
 const mapDispatchToProps = dispatch => ( {
 	mapAuthorFor: importerId => ( source, target ) =>
 		defer( () => {
-			dispatch( mapAuthor( importerId, source, target ) );
+			dispatch( createMapAuthorAction( importerId, source, target ) );
 		} ),
 } );
 
