@@ -44,15 +44,15 @@ const ID_GENERATOR_PREFIX = 'local-generated-id-';
  */
 
 // Creates a request object to cancel an importer
-const cancelOrder = ( siteId, importerId ) =>
+const createCancelOrder = ( siteId, importerId ) =>
 	toApi( { importerId, importerState: appStates.CANCEL_PENDING, site: { ID: siteId } } );
 
 // Creates a request to expire an importer session
-const expiryOrder = ( siteId, importerId ) =>
+const createExpiryOrder = ( siteId, importerId ) =>
 	toApi( { importerId, importerState: appStates.EXPIRE_PENDING, site: { ID: siteId } } );
 
 // Creates a request object to start performing the actual import
-const importOrder = importerStatus =>
+const createImportOrder = importerStatus =>
 	toApi( Object.assign( {}, importerStatus, { importerState: appStates.IMPORTING } ) );
 
 const apiStart = () => Dispatcher.handleViewAction( { type: IMPORTS_FETCH } );
@@ -100,7 +100,7 @@ export function cancelImport( siteId, importerId ) {
 
 	apiStart();
 	wpcom
-		.updateImporter( siteId, cancelOrder( siteId, importerId ) )
+		.updateImporter( siteId, createCancelOrder( siteId, importerId ) )
 		.then( apiSuccess )
 		.then( fromApi )
 		.then( receiveImporterStatus )
@@ -150,7 +150,7 @@ export function resetImport( siteId, importerId ) {
 
 	apiStart();
 	wpcom
-		.updateImporter( siteId, expiryOrder( siteId, importerId ) )
+		.updateImporter( siteId, createExpiryOrder( siteId, importerId ) )
 		.then( apiSuccess )
 		.then( fromApi )
 		.then( receiveImporterStatus )
@@ -198,7 +198,7 @@ export function startImporting( importerStatus ) {
 		importerId,
 	} );
 
-	wpcom.updateImporter( siteId, importOrder( importerStatus ) );
+	wpcom.updateImporter( siteId, createImportOrder( importerStatus ) );
 }
 
 export const startUpload = ( importerStatus, file ) => dispatch => {
