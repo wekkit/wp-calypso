@@ -180,16 +180,16 @@ export function startMappingAuthors( importerId ) {
 	reduxDispatch( startMappingAuthorsAction );
 }
 
-export const createStartImportAction = ( siteId, importerType ) => {
-	// Use a fake ID until the server returns the real one
+export const startImport = ( siteId, importerType ) => {
 	const importerId = `${ ID_GENERATOR_PREFIX }${ Math.round( Math.random() * 10000 ) }`;
-
-	return {
+	const startImportAction = {
 		type: IMPORTS_IMPORT_START,
 		importerId,
 		importerType,
 		siteId,
 	};
+
+	Dispatcher.handleViewAction( startImportAction );
 };
 
 export function startImporting( importerStatus ) {
