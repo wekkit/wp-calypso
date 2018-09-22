@@ -111,7 +111,7 @@ export function cancelImport( siteId, importerId ) {
 		.then( receiveImporterStatus )
 		.catch( apiFailure );
 }
-
+// createFailUploadAction
 export const failUpload = importerId => ( { message: error } ) => ( {
 	type: IMPORTS_UPLOAD_FAILED,
 	importerId,
@@ -130,12 +130,7 @@ export function fetchState( siteId ) {
 		.catch( apiFailure );
 }
 
-export const finishUpload = importerId => importerStatus => ( {
-	type: IMPORTS_UPLOAD_COMPLETED,
-	importerId,
-	importerStatus,
-} );
-
+// createmapAuthorAction
 export const mapAuthor = ( importerId, sourceAuthor, targetAuthor ) => ( {
 	type: IMPORTS_AUTHORS_SET_MAPPING,
 	importerId,
@@ -246,12 +241,18 @@ export const startUpload = ( importerStatus, file ) => dispatch => {
 		} )
 		.then( data => ( { ...data, siteId } ) )
 		.then( fromApi )
-		.then(
-			flowRight(
-				dispatch,
-				finishUpload( importerId )
-			)
-		)
+		.then( data => {
+			const finishUploadAction = {
+				type: IMPORTS_UPLOAD_COMPLETED,
+				importerId,
+				importerStatus: fromApi( {
+					...data,
+					siteId,
+				} ),
+			};
+
+			dispatch( finishUploadAction );
+		} )
 		.catch(
 			flowRight(
 				dispatch,
