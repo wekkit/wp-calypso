@@ -170,13 +170,6 @@ export function startMappingAuthors( importerId ) {
 	Dispatcher.handleViewAction( startMappingAuthorsAction );
 }
 
-export const setUploadProgress = ( importerId, data ) => ( {
-	type: IMPORTS_UPLOAD_SET_PROGRESS,
-	uploadLoaded: data.uploadLoaded,
-	uploadTotal: data.uploadTotal,
-	importerId,
-} );
-
 export const createStartImportAction = ( siteId, importerType ) => {
 	// Use a fake ID until the server returns the real one
 	const importerId = `${ ID_GENERATOR_PREFIX }${ Math.round( Math.random() * 10000 ) }`;
@@ -222,15 +215,16 @@ export const startUpload = ( importerStatus, file ) => dispatch => {
 		.uploadExportFile( siteId, {
 			importStatus: toApi( importerStatus ),
 			file,
+			onprogress: event => {
+				const progressAction = {
+					type: IMPORTS_UPLOAD_SET_PROGRESS,
+					uploadLoaded: event.loaded,
+					uploadTotal: event.total,
+					importerId,
+				};
 
-			onprogress: event =>
-				dispatch(
-					setUploadProgress( importerId, {
-						uploadLoaded: event.loaded,
-						uploadTotal: event.total,
-					} )
-				),
-
+				dispatch( progressAction );
+			},
 			onabort: () => cancelImport( siteId, importerId ),
 		} )
 		.then( data => {
