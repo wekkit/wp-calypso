@@ -8,14 +8,13 @@ import React from 'react';
 import { connect } from 'react-redux';
 import classNames from 'classnames';
 import { numberFormat, translate, localize } from 'i18n-calypso';
-import { has, omit } from 'lodash';
+import { flow, get, has, omit, partial } from 'lodash';
 
 /**
  * Internal dependencies
  */
-import { createMapAuthorAction, startImporting } from 'lib/importer/actions';
+import { mapAuthor, startImporting } from 'lib/importer/actions';
 import { appStates } from 'state/imports/constants';
-import { connectDispatcher } from './dispatcher-converter';
 import ProgressBar from 'components/progress-bar';
 import AuthorMappingPane from './author-mapping-pane';
 import Spinner from 'components/spinner';
@@ -217,10 +216,11 @@ class ImportingPane extends React.PureComponent {
 		this.maybeLoadHotJar();
 	}
 
+	mapAuthor = partial( mapAuthor, get( this.props, 'importerStatus.importerId' ) );
+
 	render() {
 		const {
-			importerStatus: { importerId, errorData = {}, customData },
-			mapAuthorFor,
+			importerStatus: { errorData = {}, customData },
 			site: { ID: siteId, name: siteName, single_user_site: hasSingleAuthor },
 			sourceType,
 		} = this.props;
@@ -253,7 +253,7 @@ class ImportingPane extends React.PureComponent {
 				{ this.isMapping() && (
 					<AuthorMappingPane
 						hasSingleAuthor={ hasSingleAuthor }
-						onMap={ mapAuthorFor( importerId ) }
+						onMap={ this.mapAuthor }
 						onStartImport={ () => startImporting( this.props.importerStatus ) }
 						siteId={ siteId }
 						sourceType={ sourceType }
@@ -280,14 +280,10 @@ class ImportingPane extends React.PureComponent {
 	}
 }
 
-const mapFluxDispatchToProps = dispatch => ( {
-	mapAuthorFor: importerId => ( source, target ) =>
-		setTimeout( () => {
-			dispatch( createMapAuthorAction( importerId, source, target ) );
-		}, 0 ),
-} );
-
-export default connect(
-	null,
-	{ loadTrackingTool }
-)( connectDispatcher( null, mapFluxDispatchToProps )( localize( ImportingPane ) ) );
+export default flow(
+	connect(
+		null,
+		{ loadTrackingTool }
+	),
+	localize
+)( ImportingPane );
