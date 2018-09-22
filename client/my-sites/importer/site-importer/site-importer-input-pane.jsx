@@ -8,7 +8,7 @@ import { connect } from 'react-redux';
 import Dispatcher from 'dispatcher';
 import PropTypes from 'prop-types';
 import { localize } from 'i18n-calypso';
-import { noop, every, has, defer, get, trim, sortBy, reverse } from 'lodash';
+import { defer, every, flow, get, has, noop, reverse, sortBy, trim } from 'lodash';
 import url from 'url';
 import moment from 'moment';
 
@@ -23,9 +23,9 @@ const wpcom = wpLib.undocumented();
 import { toApi, fromApi } from 'lib/importer/common';
 
 import {
+	mapMultipleAuthors,
 	startMappingAuthors,
 	startImporting,
-	createMapAuthorAction,
 	finishUpload,
 } from 'lib/importer/actions';
 import user from 'lib/user';
@@ -37,7 +37,6 @@ import TextInput from 'components/forms/form-text-input';
 import FormSelect from 'components/forms/form-select';
 
 import SiteImporterSitePreview from './site-importer-site-preview';
-import { connectDispatcher } from '../dispatcher-converter';
 
 import { loadmShotsPreview } from './site-preview-actions';
 
@@ -97,13 +96,9 @@ class SiteImporterInputPane extends React.Component {
 						...currentUserData,
 						name: currentUserData.display_name,
 					};
+					const { importerId, customData: sourceAuthors } = props.importerStatus;
 
-					const mappingFunction = this.props.mapAuthorFor( props.importerStatus.importerId );
-
-					// map all the authors to the current user
-					props.importerStatus.customData.sourceAuthors.forEach( author => {
-						mappingFunction( author, currentUser );
-					} );
+					mapMultipleAuthors( importerId, sourceAuthors, currentUser );
 				}, nextProps );
 			} else {
 				defer( props => startMappingAuthors( props.importerStatus.importerId ), nextProps );
@@ -459,14 +454,10 @@ class SiteImporterInputPane extends React.Component {
 	}
 }
 
-const mapDispatchToProps = dispatch => ( {
-	mapAuthorFor: importerId => ( source, target ) =>
-		defer( () => {
-			dispatch( createMapAuthorAction( importerId, source, target ) );
-		} ),
-} );
-
-export default connect(
-	null,
-	{ recordTracksEvent }
-)( connectDispatcher( null, mapDispatchToProps )( localize( SiteImporterInputPane ) ) );
+export default flow(
+	connect(
+		null,
+		{ recordTracksEvent }
+	),
+	localize
+)( SiteImporterInputPane );

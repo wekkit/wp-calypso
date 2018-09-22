@@ -3,7 +3,7 @@
  * External dependencies
  */
 import Dispatcher from 'dispatcher';
-import { castArray, includes } from 'lodash';
+import { castArray, each, includes } from 'lodash';
 
 /**
  * Internal dependencies
@@ -142,6 +142,9 @@ export const mapAuthor = ( importerId, sourceAuthor, targetAuthor ) => {
 	Dispatcher.handleViewAction( mapAuthorAction );
 	reduxDispatch( mapAuthorAction );
 };
+
+export const mapMultipleAuthors = ( importerId, authors, currentUser ) =>
+	each( authors, author => mapAuthor( importerId, author, currentUser ) );
 
 export function resetImport( siteId, importerId ) {
 	// We are done with this import session, so lock it away
