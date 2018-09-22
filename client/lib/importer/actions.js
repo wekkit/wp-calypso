@@ -190,6 +190,7 @@ export const startImport = ( siteId, importerType ) => {
 	};
 
 	Dispatcher.handleViewAction( startImportAction );
+	reduxDispatch( startImportAction );
 };
 
 export function startImporting( importerStatus ) {
