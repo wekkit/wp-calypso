@@ -53,7 +53,10 @@ const createExpiryOrder = ( siteId, importerId ) =>
 
 // Creates a request object to start performing the actual import
 const createImportOrder = importerStatus =>
-	toApi( Object.assign( {}, importerStatus, { importerState: appStates.IMPORTING } ) );
+	toApi( {
+		...importerStatus,
+		importerState: appStates.IMPORTING,
+	} );
 
 const apiStart = () => Dispatcher.handleViewAction( { type: IMPORTS_FETCH } );
 const apiSuccess = data => {
@@ -223,7 +226,7 @@ export const startUpload = ( importerStatus, file ) => dispatch => {
 
 			onabort: () => cancelImport( siteId, importerId ),
 		} )
-		.then( data => Object.assign( data, { siteId } ) )
+		.then( data => ( { ...data, siteId } ) )
 		.then( fromApi )
 		.then(
 			flowRight(
