@@ -5,7 +5,7 @@
  */
 
 import Dispatcher from 'dispatcher';
-import { flowRight, includes } from 'lodash';
+import { castArray, flowRight, includes } from 'lodash';
 import wpLib from 'lib/wp';
 const wpcom = wpLib.undocumented();
 
@@ -67,8 +67,6 @@ const apiFailure = data => {
 	return data;
 };
 
-const asArray = a => [].concat( a );
-
 function receiveImporterStatus( importerStatus ) {
 	Dispatcher.handleViewAction( {
 		type: IMPORTS_IMPORT_RECEIVE,
@@ -115,7 +113,7 @@ export function fetchState( siteId ) {
 	return wpcom
 		.fetchImporterState( siteId )
 		.then( apiSuccess )
-		.then( asArray )
+		.then( castArray )
 		.then( importers => importers.map( fromApi ) )
 		.then( importers => importers.map( receiveImporterStatus ) )
 		.catch( apiFailure );
