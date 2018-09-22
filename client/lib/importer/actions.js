@@ -3,7 +3,7 @@
  * External dependencies
  */
 import Dispatcher from 'dispatcher';
-import { castArray, flowRight, includes } from 'lodash';
+import { castArray, includes } from 'lodash';
 
 /**
  * Internal dependencies
@@ -111,12 +111,6 @@ export function cancelImport( siteId, importerId ) {
 		.then( receiveImporterStatus )
 		.catch( apiFailure );
 }
-// createFailUploadAction
-export const failUpload = importerId => ( { message: error } ) => ( {
-	type: IMPORTS_UPLOAD_FAILED,
-	importerId,
-	error,
-} );
 
 export function fetchState( siteId ) {
 	apiStart();
@@ -239,8 +233,6 @@ export const startUpload = ( importerStatus, file ) => dispatch => {
 
 			onabort: () => cancelImport( siteId, importerId ),
 		} )
-		.then( data => ( { ...data, siteId } ) )
-		.then( fromApi )
 		.then( data => {
 			const finishUploadAction = {
 				type: IMPORTS_UPLOAD_COMPLETED,
@@ -253,12 +245,15 @@ export const startUpload = ( importerStatus, file ) => dispatch => {
 
 			dispatch( finishUploadAction );
 		} )
-		.catch(
-			flowRight(
-				dispatch,
-				failUpload( importerId )
-			)
-		);
+		.catch( error => {
+			const failUploadAction = {
+				type: IMPORTS_UPLOAD_FAILED,
+				importerId,
+				error: error.message,
+			};
+
+			dispatch( failUploadAction );
+		} );
 
 	dispatch( startUploadAction );
 };
