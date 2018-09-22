@@ -140,6 +140,7 @@ export const mapAuthor = ( importerId, sourceAuthor, targetAuthor ) => {
 	};
 
 	Dispatcher.handleViewAction( mapAuthorAction );
+	reduxDispatch( mapAuthorAction );
 };
 
 export function resetImport( siteId, importerId ) {
