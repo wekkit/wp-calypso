@@ -425,6 +425,115 @@ function validateReducer( reducer ) {
 	return withoutPersistence( reducer );
 }
 
+class SerializationResult {
+	mainResult = undefined;
+	keyResults = undefined;
+
+	addResult( key, result ) {
+		if ( result instanceof SerializationResult ) {
+			if ( result.mainResult ) {
+				this.addResult( key, result.mainResult );
+			}
+
+			if ( result.keyResults ) {
+				forEach( result.keyResults, ( r, k ) => this.addKeyResult( k, r ) );
+			}
+		} else {
+			if ( ! this.mainResult ) {
+				this.mainResult = {};
+			}
+			this.mainResult[ key ] = result;
+		}
+	}
+
+	addKeyResult( key, result ) {
+		if ( result instanceof SerializationResult ) {
+			if ( result.mainResult ) {
+				this.addKeyResult( key, result.mainResult );
+			}
+			if ( result.keyResults ) {
+				forEach( result.keyResults, ( r, k ) => this.addKeyResult( k, r ) );
+			}
+		} else {
+			if ( ! this.keyResults ) {
+				this.keyResults = {};
+			}
+			this.keyResults[ key ] = result;
+		}
+	}
+}
+
+function createCombinedReducer( validatedReducers ) {
+	const combined = combine( validatedReducers );
+	const combinedWithSerializer = ( state, action ) => {
+		// SERIALIZE needs behavior that's slightly different from `combineReducers` from Redux:
+		// - `undefined` is a valid value returned from SERIALIZE reducer, but `combineReducers`
+		//   would throw an exception when seeing it.
+		// - if a particular subreducer returns `undefined`, then that property won't be included
+		//   in the result object at all.
+		// - if none of the subreducers produced anything to persist, the combined result will be
+		//   `undefined` rather than an empty object.
+		// - if the state to serialize is `undefined` (happens when some key in state is missing)
+		//   the serialized value is `undefined` and there's no need to reduce anything.
+		if ( action.type === SERIALIZE ) {
+			if ( state === undefined ) {
+				return undefined;
+			}
+			return reduce(
+				validatedReducers,
+				( result, reducer, key ) => {
+					const serialized = reducer( state[ key ], action );
+					if ( serialized !== undefined ) {
+						if ( ! result ) {
+							// instantiate the result object only when it's going to have at least one property
+							result = new SerializationResult();
+						}
+						if ( reducer.storageKey ) {
+							result.addKeyResult( reducer.storageKey, serialized );
+						} else {
+							result.addResult( key, serialized );
+						}
+					}
+					return result;
+				},
+				undefined
+			);
+		}
+
+		return combined( state, action );
+	};
+
+	combinedWithSerializer.hasCustomPersistence = true;
+
+	combinedWithSerializer.addReducer = function( keys, reducer ) {
+		const [ key, ...restKeys ] = keys;
+		const existingReducer = validatedReducers[ key ];
+		if ( existingReducer ) {
+			if ( restKeys.length === 0 ) {
+				throw new Error( `Reducer with key '${ key }' is already registered` );
+			}
+
+			if ( ! existingReducer.addReducer ) {
+				throw new Error(
+					"New reducer can be added only into a reducer created with 'combineReducers'"
+				);
+			}
+
+			const newReducer = existingReducer.addReducer( restKeys, reducer );
+			return createCombinedReducer( { ...validatedReducers, [ key ]: newReducer } );
+		}
+
+		const newReducer = reduceRight(
+			restKeys,
+			( subreducer, subkey ) => combineReducers( { [ subkey ]: subreducer } ),
+			validateReducer( reducer )
+		);
+		return createCombinedReducer( { ...validatedReducers, [ key ]: newReducer } );
+	};
+
+	return combinedWithSerializer;
+}
+
 /**
  * Returns a single reducing function that ensures that persistence is opt-in.
  * If you don't need state to be stored, simply use this method instead of
@@ -492,75 +601,6 @@ function validateReducer( reducer ) {
  * @param {object} reducers - object containing the reducers to merge
  * @returns {function} - Returns the combined reducer function
  */
-function createCombinedReducer( validatedReducers ) {
-	console.log( 'combining new reducer from:', Object.keys( validatedReducers ) );
-	const combined = combine( validatedReducers );
-	const combinedWithSerializer = ( state, action ) => {
-		// SERIALIZE needs behavior that's slightly different from `combineReducers` from Redux:
-		// - `undefined` is a valid value returned from SERIALIZE reducer, but `combineReducers`
-		//   would throw an exception when seeing it.
-		// - if a particular subreducer returns `undefined`, then that property won't be included
-		//   in the result object at all.
-		// - if none of the subreducers produced anything to persist, the combined result will be
-		//   `undefined` rather than an empty object.
-		// - if the state to serialize is `undefined` (happens when some key in state is missing)
-		//   the serialized value is `undefined` and there's no need to reduce anything.
-		if ( action.type === SERIALIZE ) {
-			if ( state === undefined ) {
-				return undefined;
-			}
-			return reduce(
-				validatedReducers,
-				( result, reducer, key ) => {
-					const serialized = reducer( state[ key ], action );
-					if ( serialized !== undefined ) {
-						if ( ! result ) {
-							// instantiate the result object only when it's going to have at least one property
-							result = {};
-						}
-						result[ key ] = serialized;
-					}
-					return result;
-				},
-				undefined
-			);
-		}
-
-		return combined( state, action );
-	};
-
-	combinedWithSerializer.hasCustomPersistence = true;
-
-	combinedWithSerializer.addReducer = function( keys, reducer ) {
-		console.log( 'adding new reducer:', keys );
-		const [ key, ...restKeys ] = keys;
-		const existingReducer = validatedReducers[ key ];
-		if ( existingReducer ) {
-			if ( restKeys.length === 0 ) {
-				throw new Error( `Reducer with key '${ key }' is already registered` );
-			}
-
-			if ( ! existingReducer.addReducer ) {
-				throw new Error(
-					"New reducer can be added only into a reducer created with 'combineReducers'"
-				);
-			}
-
-			const newReducer = existingReducer.addReducer( restKeys, reducer );
-			return createCombinedReducer( { ...validatedReducers, [ key ]: newReducer } );
-		}
-
-		const newReducer = reduceRight(
-			restKeys,
-			( subreducer, subkey ) => combineReducers( { [ subkey ]: subreducer } ),
-			validateReducer( reducer )
-		);
-		return createCombinedReducer( { ...validatedReducers, [ key ]: newReducer } );
-	};
-
-	return combinedWithSerializer;
-}
-
 export function combineReducers( reducers ) {
 	return createCombinedReducer( mapValues( reducers, validateReducer ) );
 }

@@ -51,9 +51,9 @@ function getReducersAsync( extensionDirs = [] ) {
 }
 
 function getExtensionsModuleAsync( extensionDirs ) {
-	return getReducersAsync( extensionDirs.filter( d => d !== 'woocommerce' ) ).then(
-		generateExtensionsModuleString
-	);
+	return getReducersAsync(
+		extensionDirs.filter( d => ! [ 'woocommerce', 'wp-super-cache' ].includes( d ) )
+	).then( generateExtensionsModuleString );
 }
 
 module.exports = function( content ) {
