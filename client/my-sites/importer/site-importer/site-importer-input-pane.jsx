@@ -22,12 +22,7 @@ const wpcom = wpLib.undocumented();
 
 import { toApi, fromApi } from 'lib/importer/common';
 
-import {
-	mapMultipleAuthors,
-	startMappingAuthors,
-	startImporting,
-	finishUpload,
-} from 'lib/importer/actions';
+import { mapMultipleAuthors, startMappingAuthors, startImporting } from 'lib/importer/actions';
 import user from 'lib/user';
 
 import { appStates } from 'state/imports/constants';
@@ -41,6 +36,8 @@ import SiteImporterSitePreview from './site-importer-site-preview';
 import { loadmShotsPreview } from './site-preview-actions';
 
 import { recordTracksEvent } from 'state/analytics/actions';
+// TODO: Actions should be held in an actions file
+import { IMPORTS_UPLOAD_COMPLETED } from 'state/action-types';
 
 const NO_ERROR_STATE = {
 	error: false,
@@ -328,8 +325,14 @@ class SiteImporterInputPane extends React.Component {
 					site_engine: this.state.importData.engine,
 				} );
 
-				const data = fromApi( resp );
-				const action = finishUpload( this.props.importerStatus.importerId )( data );
+				// TODO: This introduces some duplication.
+				// After moving this to redux, this can be better generalised
+				const action = {
+					type: IMPORTS_UPLOAD_COMPLETED,
+					importerId: this.props.importerStatus.importerId,
+					importerStatus: fromApi( resp ),
+				};
+
 				defer( () => {
 					Dispatcher.handleViewAction( action );
 				} );
