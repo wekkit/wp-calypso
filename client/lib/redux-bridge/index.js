@@ -4,6 +4,7 @@
  * Internal Dependencies
  */
 import Dispatcher from 'dispatcher';
+import { getStateFromLocalStorage } from 'state/initial-state';
 
 let reduxStore = null;
 
@@ -48,8 +49,10 @@ export function reduxDispatch( ...args ) {
 	return reduxStore.dispatch( ...args );
 }
 
-export function reduxAddReducer( key, reducer ) {
-	return reduxStore.addReducer( key, reducer );
+export async function reduxAddReducer( key, reducer ) {
+	reduxStore.addReducer( key, reducer );
+	const state = await getStateFromLocalStorage( reducer, key );
+	reduxStore.dispatch( { type: 'INITIALIZE_REDUCER_STATE', key, state } );
 }
 
 function markedFluxAction( action ) {

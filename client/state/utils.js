@@ -500,6 +500,20 @@ function createCombinedReducer( validatedReducers ) {
 			);
 		}
 
+		if ( action.type === 'INITIALIZE_REDUCER_STATE' ) {
+			if ( ! find( validatedReducers, reducer => reducer.storageKey === action.key ) ) {
+				return state;
+			}
+
+			return reduce( validatedReducers, ( result, reducer, key ) => {
+				if ( reducer.storageKey === action.key ) {
+					result[ key ] = action.state;
+				} else {
+					result[ key ] = state[ key ];
+				}
+			} );
+		}
+
 		return combined( state, action );
 	};
 

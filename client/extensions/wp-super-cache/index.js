@@ -17,9 +17,8 @@ import { makeLayout, render as clientRender } from 'controller';
 import reducer from './state/reducer';
 import { reduxAddReducer } from 'lib/redux-bridge';
 
-export default function() {
-	console.log('init fun of wp-super-cache called');
-	reduxAddReducer( [ 'extensions', 'wpSuperCache' ], reducer );
+export default async function() {
+	await reduxAddReducer( [ 'extensions', 'wpSuperCache' ], reducer );
 
 	const validTabSlugs = compact( map( Tabs, ( { slug } ) => slug ) ).join( '|' );
 	page( '/extensions/wp-super-cache', siteSelection, sites, makeLayout, clientRender );

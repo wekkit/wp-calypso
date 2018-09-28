@@ -25,7 +25,7 @@ const boot = currentUser => {
 	const project = require( `./project/${ PROJECT_NAME }` );
 	utils();
 	invoke( project, 'utils' );
-	createReduxStoreFromPersistedInitialState( reduxStore => {
+	createReduxStoreFromPersistedInitialState.then( reduxStore => {
 		locales( currentUser, reduxStore );
 		invoke( project, 'locales', currentUser, reduxStore );
 		configureReduxStore( currentUser, reduxStore );
