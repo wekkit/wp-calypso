@@ -16,6 +16,7 @@ import analytics from 'lib/analytics';
 import { cartItems } from 'lib/cart-values';
 import { clearSitePlans } from 'state/sites/plans/actions';
 import { clearPurchases } from 'state/purchases/actions';
+import DomainDetailsForm from './domain-details-form';
 import BillingDetailsForm from './billing-details-form';
 import {
 	domainMapping,
@@ -70,6 +71,7 @@ import { isRequestingSitePlans } from 'state/sites/plans/selectors';
 import { isRequestingPlans } from 'state/plans/selectors';
 import PageViewTracker from 'lib/analytics/page-view-tracker';
 import isAtomicSite from 'state/selectors/is-site-automated-transfer';
+import { abtest } from 'lib/abtest';
 
 export class Checkout extends React.Component {
 	static propTypes = {
@@ -498,25 +500,37 @@ export class Checkout extends React.Component {
 	};
 
 	content() {
-		const { selectedSite } = this.props;
+		const { cart, selectedSite, productsList, isBillingInfoTest } = this.props;
 
 		if ( this.isLoading() ) {
 			return <SecurePaymentFormPlaceholder />;
 		}
 
-		return (
-			<div>
-				<BillingDetailsForm
-					cart={ this.props.cart }
-					productsList={ this.props.productsList }
+		if ( ! isBillingInfoTest && this.needsDomainDetails() ) {
+			return (
+				<DomainDetailsForm
+					cart={ cart }
+					productsList={ productsList }
 					userCountryCode={ this.props.userCountryCode }
 				/>
+			);
+		}
+
+		return (
+			<React.Fragment>
+				{ isBillingInfoTest && (
+					<BillingDetailsForm
+						cart={ cart }
+						productsList={ productsList }
+						userCountryCode={ this.props.userCountryCode }
+					/>
+				) }
 				<SecurePaymentForm
-					cart={ this.props.cart }
+					cart={ cart }
 					transaction={ this.props.transaction }
 					cards={ this.props.cards }
 					paymentMethods={ this.paymentMethodsAbTestFilter() }
-					products={ this.props.productsList }
+					products={ productsList }
 					selectedSite={ selectedSite }
 					redirectTo={ this.getCheckoutCompleteRedirectPath }
 					handleCheckoutCompleteRedirect={ this.handleCheckoutCompleteRedirect }
@@ -524,7 +538,7 @@ export class Checkout extends React.Component {
 				>
 					{ this.renderSubscriptionLengthPicker() }
 				</SecurePaymentForm>
-			</div>
+			</React.Fragment>
 		);
 	}
 
@@ -678,6 +692,7 @@ export default connect(
 			isPlansListFetching: isRequestingPlans( state ),
 			isSitePlansListFetching: isRequestingSitePlans( state, selectedSiteId ),
 			planSlug: getUpgradePlanSlugFromPath( state, selectedSiteId, props.product ),
+			isBillingInfoTest: 'test' === abtest( 'collectBillingInformation' ),
 			isJetpackNotAtomic:
 				isJetpackSite( state, selectedSiteId ) && ! isAtomicSite( state, selectedSiteId ),
 		};
