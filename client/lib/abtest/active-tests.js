@@ -133,4 +133,12 @@ export default {
 		},
 		defaultVariation: 'justSearch',
 	},
+	collectBillingInformation: {
+		datestamp: '20181010',
+		variations: {
+			control: 50,
+			test: 50,
+		},
+		defaultVariation: 'control',
+	},
 };
