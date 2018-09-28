@@ -5,6 +5,7 @@
 import React, { PureComponent } from 'react';
 import { connect } from 'react-redux';
 import { localize } from 'i18n-calypso';
+import classNames from 'classnames';
 import debugFactory from 'debug';
 import { first, includes, indexOf, intersection, isEqual, last, map } from 'lodash';
 
@@ -14,6 +15,7 @@ import { first, includes, indexOf, intersection, isEqual, last, map } from 'loda
 import QueryContactDetailsCache from 'components/data/query-contact-details-cache';
 import QueryTldValidationSchemas from 'components/data/query-tld-validation-schemas';
 import PrivacyProtection from './privacy-protection';
+import PaymentBox from './payment-box';
 import FormButton from 'components/forms/form-button';
 import SecurePaymentFormPlaceholder from './secure-payment-form-placeholder.jsx';
 import wp from 'lib/wp';
@@ -201,7 +203,7 @@ export class DomainDetailsForm extends PureComponent {
 	}
 
 	renderDetailsForm() {
-		return <div>{ this.renderDomainContactDetailsFields() }</div>;
+		return <form>{ this.renderDomainContactDetailsFields() }</form>;
 	}
 
 	renderExtraDetailsForm( tld ) {
@@ -249,6 +251,26 @@ export class DomainDetailsForm extends PureComponent {
 	}
 
 	render() {
+		const classSet = classNames( {
+			'domain-details': true,
+			selected: true,
+		} );
+
+		let title;
+		let message;
+		// TODO: gather up tld specific stuff
+		if ( this.state.currentStep === 'fr' ) {
+			title = this.props.translate( '.FR Registration' );
+		} else if ( this.needsOnlyGoogleAppsDetails() ) {
+			title = this.props.translate( 'G Suite Account Information' );
+		} else {
+			title = this.props.translate( 'Domain Contact Information' );
+			message = this.props.translate(
+				'For your convenience, we have pre-filled your WordPress.com contact information. Please ' +
+					"review this to be sure it's the correct information you want to use for this domain."
+			);
+		}
+
 		const renderPrivacy =
 			( cartItems.hasDomainRegistration( this.props.cart ) ||
 				cartItems.hasTransferProduct( this.props.cart ) ) &&
@@ -258,7 +280,10 @@ export class DomainDetailsForm extends PureComponent {
 			<div>
 				<QueryTldValidationSchemas tlds={ this.getTldsWithAdditionalForm() } />
 				{ renderPrivacy && this.renderPrivacySection() }
-				{ this.renderCurrentForm() }
+				<PaymentBox currentPage={ this.state.currentStep } classSet={ classSet } title={ title }>
+					{ message && <p>{ message }</p> }
+					{ this.renderCurrentForm() }
+				</PaymentBox>
 			</div>
 		);
 	}
