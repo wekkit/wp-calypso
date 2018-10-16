@@ -11,6 +11,7 @@ import { Component } from '@wordpress/element';
  * Internal dependencies
  */
 import MarkdownRenderer from './renderer';
+import requireModules from 'gutenberg/extensions/jetpack/require-modules';
 
 /**
  * Module variables
@@ -92,4 +93,4 @@ class MarkdownEdit extends Component {
 	}
 }
 
-export default MarkdownEdit;
+export default requireModules( [ 'markdown' ] )( MarkdownEdit );
