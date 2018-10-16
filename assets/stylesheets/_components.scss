@@ -9,16 +9,6 @@
 
 @import 'layout/style';
 
-@import 'account-recovery/components/account-recovery-error-message/style';
-@import 'account-recovery/forgot-username-form/style';
-@import 'account-recovery/lost-password-form/style';
-@import 'account-recovery/reset-password-form/style';
-@import 'account-recovery/reset-password-sms-form/style';
-@import 'account-recovery/reset-password-email-form/style';
-@import 'account-recovery/reset-password-confirm-form/style';
-@import 'account-recovery/reset-password/transaction-id-form/style';
-@import 'account-recovery/reset-code-validation/style';
-@import 'account-recovery/style';
 @import 'auth/style';
 @import 'blocks/comment-button/style';
 @import 'blocks/comments/style';
@@ -80,10 +70,7 @@
 @import 'blocks/video-editor/style';
 @import 'blocks/stats-navigation/style';
 @import 'blocks/user-mentions/style';
-@import 'components/async-load/style';
-@import 'components/badge/style';
 @import 'components/banner/style';
-@import 'components/bulk-select/style';
 @import 'components/button/style';
 @import 'components/button-group/style';
 @import 'components/card/style';

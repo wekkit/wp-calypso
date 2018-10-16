@@ -14,15 +14,16 @@ import { registerCoreBlocks } from '@wordpress/block-library';
  * Internal dependencies
  */
 import Editor from './edit-post/editor.js';
+import EditorDocumentHead from './editor-document-head';
 import EditorPostTypeUnsupported from 'post-editor/editor-post-type-unsupported';
 import QueryPostTypes from 'components/data/query-post-types';
-import { createAutoDraft, requestSitePost } from 'state/data-getters';
+import { createAutoDraft, requestSitePost, requestGutenbergDemoContent } from 'state/data-getters';
 import { getHttpData } from 'state/data-layer/http-data';
 import { getSiteSlug } from 'state/sites/selectors';
 import { WithAPIMiddleware } from './api-middleware/utils';
 import { translate } from 'i18n-calypso';
-
-import './hooks';
+import 'tinymce/plugins/lists/plugin.js'; // Make list indent/outdent work
+import './hooks'; // Needed for integrating Calypso's media library (and other hooks)
 
 class GutenbergEditor extends Component {
 	componentDidMount() {
@@ -44,12 +45,14 @@ class GutenbergEditor extends Component {
 			autosaveInterval: 3, //interval to debounce autosaving events, in seconds.
 			titlePlaceholder: translate( 'Add title' ),
 			bodyPlaceholder: translate( 'Write your story' ),
+			postLock: {},
 		};
 
 		return (
 			<WithAPIMiddleware siteSlug={ siteSlug }>
 				<QueryPostTypes siteId={ siteId } />
 				<EditorPostTypeUnsupported type={ postType } />
+				<EditorDocumentHead postType={ postType } />
 				<Editor
 					settings={ editorSettings }
 					hasFixedToolbar={ true }
@@ -71,11 +74,21 @@ const getPost = ( siteId, postId, postType ) => {
 	return null;
 };
 
-const mapStateToProps = ( state, { siteId, postId, uniqueDraftKey, postType } ) => {
+const mapStateToProps = ( state, { siteId, postId, uniqueDraftKey, postType, isDemoContent } ) => {
 	const draftPostId = get( getHttpData( uniqueDraftKey ), 'data.ID', null );
 	const post = getPost( siteId, postId || draftPostId, postType );
+	const demoContent = isDemoContent ? get( requestGutenbergDemoContent(), 'data' ) : null;
 	const isAutoDraft = 'auto-draft' === get( post, 'status', null );
-	const overridePost = isAutoDraft ? { title: '' } : null;
+
+	let overridePost = null;
+	if ( !! demoContent ) {
+		overridePost = {
+			title: demoContent.title.raw,
+			content: demoContent.content,
+		};
+	} else if ( isAutoDraft ) {
+		overridePost = { title: '' };
+	}
 
 	return {
 		siteSlug: getSiteSlug( state, siteId ),

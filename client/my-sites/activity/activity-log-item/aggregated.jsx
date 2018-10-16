@@ -23,6 +23,8 @@ import { getActivityLogFilter } from 'state/selectors/get-activity-log-filter';
 import { filterStateToQuery } from 'state/activity-log/utils';
 import { addQueryArgs } from 'lib/url';
 import ActivityActor from './activity-actor';
+import ActivityMedia from './activity-media';
+import analytics from 'lib/analytics';
 
 const MAX_STREAM_ITEMS_IN_AGGREGATE = 10;
 
@@ -48,10 +50,36 @@ class ActivityLogAggregatedItem extends Component {
 
 		return addQueryArgs( query, window.location.pathname + window.location.hash );
 	}
+	trackClick = intent => {
+		const { activity } = this.props;
+		const section = activity.activityGroup;
+		analytics.tracks.recordEvent( 'calypso_activitylog_item_click', {
+			activity: activity.activityName,
+			section,
+			intent: intent,
+			is_aggregate: true,
+			stream_count: activity.streamCount,
+		} );
+	};
+
+	trackAggregateExpandToggle = () => {
+		this.trackClick( 'toggle' );
+	};
+
+	trackAggregateViewAll = () => {
+		this.trackClick( 'view_all' );
+	};
 
 	renderHeader() {
 		const { activity } = this.props;
-		const { actorAvatarUrl, actorName, actorRole, actorType, multipleActors } = activity;
+		const {
+			actorAvatarUrl,
+			actorName,
+			actorRole,
+			actorType,
+			multipleActors,
+			activityMedia,
+		} = activity;
 		let actor;
 		if ( multipleActors ) {
 			actor = <ActivityActor actorType="Multiple" />;
@@ -62,7 +90,33 @@ class ActivityLogAggregatedItem extends Component {
 		return (
 			<div className="activity-log-item__card-header">
 				{ actor }
-				<ActivityDescription activity={ activity } />
+				{ activityMedia && (
+					<ActivityMedia
+						className={ classNames( {
+							'activity-log-item__activity-media': true,
+							'is-desktop': true,
+							'has-gridicon': ! activityMedia.available,
+						} ) }
+						icon={ ! activityMedia.available && activityMedia.gridicon }
+						name={ activityMedia.available && activityMedia.name }
+						thumbnail={ activityMedia.available && activityMedia.thumbnail_url }
+						fullImage={ false }
+					/>
+				) }
+				<div className="activity-log-item__description">
+					<div className="activity-log-item__description-content">
+						<ActivityDescription activity={ activity } />
+					</div>
+				</div>
+				{ activityMedia && (
+					<ActivityMedia
+						className="activity-log-item__activity-media is-mobile"
+						icon={ false }
+						name={ activityMedia.available && activityMedia.name }
+						thumbnail={ false }
+						fullImage={ activityMedia.available && activityMedia.medium_url }
+					/>
+				) }
 			</div>
 		);
 	}
@@ -90,7 +144,11 @@ class ActivityLogAggregatedItem extends Component {
 					</div>
 					<ActivityIcon activityIcon={ activityIcon } activityStatus={ activityStatus } />
 				</div>
-				<FoldableCard className="activity-log-item__card" header={ this.renderHeader() }>
+				<FoldableCard
+					className="activity-log-item__card"
+					header={ this.renderHeader() }
+					onClick={ this.trackAggregateExpandToggle }
+				>
 					{ activity.streams.map( log => (
 						<Fragment key={ log.activityId }>
 							<ActivityLogItem
@@ -110,7 +168,12 @@ class ActivityLogAggregatedItem extends Component {
 									args: { number: MAX_STREAM_ITEMS_IN_AGGREGATE, total: streamCount },
 								} ) }
 							</p>
-							<Button href={ this.getViewAllUrl() } compact borderless>
+							<Button
+								href={ this.getViewAllUrl() }
+								compact
+								borderless
+								onClick={ this.trackAggregateViewAll() }
+							>
 								{ translate( 'View All' ) }
 							</Button>
 						</div>
