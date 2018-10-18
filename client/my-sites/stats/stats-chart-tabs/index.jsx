@@ -19,14 +19,12 @@ import Legend from 'components/chart/legend';
 import StatTabs from '../stats-tabs';
 import StatsModulePlaceholder from '../stats-module/placeholder';
 import Card from 'components/card';
-import QuerySiteStats from 'components/data/query-site-stats';
 import { getSelectedSiteId } from 'state/ui/selectors';
-import {
-	isRequestingSiteStatsForQuery,
-	getSiteStatsNormalizedData,
-} from 'state/stats/lists/selectors';
 import { recordGoogleEvent } from 'state/analytics/actions';
 import { getSiteOption } from 'state/sites/selectors';
+import { requestChartCounts } from 'state/stats/chart/actions';
+import { getChartCounts, getLoadingTabs } from 'state/stats/chart/selectors';
+import { QUERY_FIELDS } from 'state/stats/chart/utils';
 import { formatDate, getQueryDate } from './utility';
 
 class StatModuleChartTabs extends Component {
@@ -61,6 +59,16 @@ class StatModuleChartTabs extends Component {
 		isActiveTabLoading: PropTypes.bool,
 		onChangeLegend: PropTypes.func.isRequired,
 	};
+
+	componentDidMount() {
+		this.props.query && this.props.requestChartCounts( this.props.query );
+	}
+
+	componentDidUpdate( prevProps ) {
+		if ( this.props.query && prevProps.queryKey !== this.props.queryKey ) {
+			this.props.requestChartCounts( this.props.query );
+		}
+	}
 
 	buildTooltipData( item ) {
 		const tooltipData = [];
@@ -203,42 +211,34 @@ class StatModuleChartTabs extends Component {
 	}
 
 	render() {
-		const { isActiveTabLoading, siteId, quickQuery, fullQuery } = this.props;
+		const { isActiveTabLoading } = this.props;
 		const classes = [ 'stats-module', 'is-chart-tabs', { 'is-loading': isActiveTabLoading } ];
 
 		return (
-			<div>
-				{ siteId && (
-					<QuerySiteStats statType="statsVisits" siteId={ siteId } query={ quickQuery } />
-				) }
-				{ siteId && (
-					<QuerySiteStats statType="statsVisits" siteId={ siteId } query={ fullQuery } />
-				) }
-				<Card className={ classNames( ...classes ) }>
-					<Legend
-						activeCharts={ this.props.activeLegend }
-						activeTab={ this.props.activeTab }
-						availableCharts={ this.props.availableLegend }
-						clickHandler={ this.onLegendClick }
-						tabs={ this.props.charts }
-					/>
-					{ /* eslint-disable-next-line wpcalypso/jsx-classname-namespace */ }
-					<StatsModulePlaceholder className="is-chart" isLoading={ isActiveTabLoading } />
-					<Chart
-						barClick={ this.props.barClick }
-						data={ this.buildChartData() }
-						loading={ isActiveTabLoading }
-					/>
-					<StatTabs
-						data={ this.props.data }
-						tabs={ this.props.charts }
-						switchTab={ this.props.switchTab }
-						selectedTab={ this.props.chartTab }
-						activeIndex={ this.props.queryDate }
-						activeKey="period"
-					/>
-				</Card>
-			</div>
+			<Card className={ classNames( ...classes ) }>
+				<Legend
+					activeCharts={ this.props.activeLegend }
+					activeTab={ this.props.activeTab }
+					availableCharts={ this.props.availableLegend }
+					clickHandler={ this.onLegendClick }
+					tabs={ this.props.charts }
+				/>
+				{ /* eslint-disable-next-line wpcalypso/jsx-classname-namespace */ }
+				<StatsModulePlaceholder className="is-chart" isLoading={ isActiveTabLoading } />
+				<Chart
+					barClick={ this.props.barClick }
+					data={ this.buildChartData() }
+					loading={ isActiveTabLoading }
+				/>
+				<StatTabs
+					data={ this.props.data }
+					tabs={ this.props.charts }
+					switchTab={ this.props.switchTab }
+					selectedTab={ this.props.chartTab }
+					activeIndex={ this.props.queryDate }
+					activeKey="period"
+				/>
+			</Card>
 		);
 	}
 }
@@ -255,49 +255,29 @@ const connectComponent = connect(
 			return NO_SITE_STATE;
 		}
 
+		const data = getChartCounts( state, siteId, period );
+		const loadingTabs = getLoadingTabs( state, siteId, period );
+		const isActiveTabLoading = loadingTabs.includes( chartTab );
 		const quantity = 'year' === period ? 10 : 30;
 		const timezoneOffset = getSiteOption( state, siteId, 'gmt_offset' ) || 0;
 		const date = getQueryDate( queryDate, timezoneOffset, period, quantity );
-
-		// If we are on the default Tab, grab visitors too
-		const quickQueryFields = 'views' === chartTab ? 'views,visitors' : chartTab;
-
-		const query = { unit: period, date, quantity };
-		const quickQuery = { ...query, stat_fields: quickQueryFields };
-		const fullQuery = { ...query, stat_fields: 'views,visitors,likes,comments,post_titles' };
-
-		const quickQueryRequesting = isRequestingSiteStatsForQuery(
-			state,
+		const queryKey = `${ date }-${ period }-${ quantity }-${ siteId }`;
+		const query = {
+			date,
+			period,
+			quantity,
 			siteId,
-			'statsVisits',
-			quickQuery
-		);
-		const fullQueryRequesting = isRequestingSiteStatsForQuery(
-			state,
-			siteId,
-			'statsVisits',
-			fullQuery
-		);
-
-		const quickQueryData = getSiteStatsNormalizedData( state, siteId, 'statsVisits', quickQuery );
-		const fullQueryData = getSiteStatsNormalizedData( state, siteId, 'statsVisits', fullQuery );
-		const data = fullQueryRequesting ? quickQueryData : fullQueryData;
-
-		return {
-			data,
-			fullQuery,
-			fullQueryRequesting,
-			isActiveTabLoading: quickQueryRequesting && fullQueryRequesting && ! ( data && data.length ),
-			quickQuery,
-			quickQueryRequesting,
-			siteId,
+			statFields: QUERY_FIELDS,
 		};
+
+		return { data, loadingTabs, isActiveTabLoading, queryKey, query, siteId };
 	},
-	{ recordGoogleEvent },
+	{ recordGoogleEvent, requestChartCounts },
 	null,
 	{
 		areStatePropsEqual: compareProps( {
-			deep: [ 'activeTab', 'fullQuery', 'quickQuery' ],
+			shallow: [ 'loadingTabs', 'activeTab', 'isActiveTabLoading' ],
+			deep: [ 'query' ],
 		} ),
 	}
 );
