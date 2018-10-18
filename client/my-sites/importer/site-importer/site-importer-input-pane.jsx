@@ -17,6 +17,7 @@ import moment from 'moment';
  */
 import wpLib from 'lib/wp';
 import config from 'config';
+import { validateImportUrl } from 'lib/importers/url-validation';
 
 const wpcom = wpLib.undocumented();
 
@@ -69,7 +70,7 @@ class SiteImporterInputPane extends React.Component {
 		error: false,
 		errorMessage: '',
 		errorType: null,
-		siteURLInput: '',
+		siteURLInput: this.props.fromSite || '',
 		selectedEndpoint: '',
 		availableEndpoints: [],
 	};
@@ -79,6 +80,10 @@ class SiteImporterInputPane extends React.Component {
 			this.fetchEndpoints();
 		}
 	};
+
+	componentDidMount() {
+		this.validateSite();
+	}
 
 	// TODO This can be improved if we move to Redux.
 	componentWillReceiveProps = nextProps => {
@@ -184,22 +189,20 @@ class SiteImporterInputPane extends React.Component {
 
 	validateSite = () => {
 		const siteURL = trim( this.state.siteURLInput );
+
+		if ( ! siteURL ) {
+			return;
+		}
+
 		const { hostname, pathname } = url.parse(
 			siteURL.startsWith( 'http' ) ? siteURL : 'https://' + siteURL
 		);
 
-		let errorMessage;
-		if ( ! siteURL ) {
-			errorMessage = this.props.translate( 'Please enter a valid URL.' );
-		} else if ( hostname === 'editor.wix.com' || hostname === 'www.wix.com' ) {
-			errorMessage = this.props.translate(
-				"You've entered the URL for the Wix editor, which only you can access. Please enter your site's public URL. It should look like one of the examples below."
-			);
-		} else if ( hostname.indexOf( '.wixsite.com' ) > -1 && pathname === '/' ) {
-			errorMessage = this.props.translate(
-				"You haven't entered the full URL. Please include the part of the URL that comes after wixsite.com. See below for an example."
-			);
+		if ( ! hostname ) {
+			return;
 		}
+
+		const errorMessage = validateImportUrl( siteURL );
 
 		if ( errorMessage ) {
 			this.setState( {
