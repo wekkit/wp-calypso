@@ -33,10 +33,12 @@ import {
 	SQUARESPACE,
 } from 'state/imports/constants';
 import EmailVerificationGate from 'components/email-verification/email-verification-gate';
-import { getSelectedSite, getSelectedSiteSlug } from 'state/ui/selectors';
+import { getSelectedSite, getSelectedSiteSlug, getSelectedSiteId } from 'state/ui/selectors';
 import Main from 'components/main';
 import HeaderCake from 'components/header-cake';
 import Placeholder from 'my-sites/site-settings/placeholder';
+import { isCurrentUserEmailVerified } from 'state/current-user/selectors';
+import isUnlaunchedSite from 'state/selectors/is-unlaunched-site';
 
 /**
  * Configuration for each of the importers to be rendered in this section. If
@@ -206,18 +208,13 @@ class SiteSettingsImport extends Component {
 		this.setState( getImporterState() );
 	};
 
-	render() {
+	renderImportersList() {
 		const { site, siteSlug, translate } = this.props;
-		if ( ! site ) {
-			return <Placeholder />;
-		}
-
 		const {
-			jetpack: isJetpack,
-			options: { admin_url: adminUrl },
 			slug,
 			title: siteTitle,
 		} = site;
+
 		const title = siteTitle.length ? siteTitle : slug;
 		const description = translate(
 			'Import content from another site into ' +
@@ -235,6 +232,48 @@ class SiteSettingsImport extends Component {
 		);
 
 		return (
+			<>
+				<Interval onTick={ this.updateFromAPI } period={ EVERY_FIVE_SECONDS } />
+				<CompactCard>
+					<header>
+						<h1 className="site-settings__importer-section-title importer__section-title">
+							{ translate( 'Import Another Site' ) }
+						</h1>
+						<p className="importer__section-description">{ description }</p>
+					</header>
+				</CompactCard>
+				{ this.renderImporters() }
+			</>
+		);
+	}
+
+	renderImportersListGate() {
+		if ( this.props.needsVerification && ! this.props.isUnlaunchedSite ) {
+			return (
+				<EmailVerificationGate>
+					{ this.renderImportersList() }
+				</EmailVerificationGate>
+			);
+		}
+
+		return this.renderImportersList();
+	}
+
+	render() {
+		const { site, siteSlug, translate } = this.props;
+		if ( ! site ) {
+			return <Placeholder />;
+		}
+
+		const {
+			jetpack: isJetpack,
+			options: { admin_url: adminUrl },
+			slug,
+			title: siteTitle,
+		} = site;
+		const title = siteTitle.length ? siteTitle : slug;
+
+		return (
 			<Main>
 				<HeaderCake backHref={ '/settings/general/' + siteSlug }>
 					<h1>{ translate( 'Import' ) }</h1>
@@ -249,20 +288,7 @@ class SiteSettingsImport extends Component {
 						actionTarget="_blank"
 					/>
 				) }
-				{ ! isJetpack && (
-					<EmailVerificationGate>
-						<Interval onTick={ this.updateFromAPI } period={ EVERY_FIVE_SECONDS } />
-						<CompactCard>
-							<header>
-								<h1 className="site-settings__importer-section-title importer__section-title">
-									{ translate( 'Import Another Site' ) }
-								</h1>
-								<p className="importer__section-description">{ description }</p>
-							</header>
-						</CompactCard>
-						{ this.renderImporters() }
-					</EmailVerificationGate>
-				) }
+				{ ! isJetpack && this.renderImportersListGate() }
 			</Main>
 		);
 	}
@@ -271,4 +297,6 @@ class SiteSettingsImport extends Component {
 export default connect( state => ( {
 	site: getSelectedSite( state ),
 	siteSlug: getSelectedSiteSlug( state ),
+	isUnlaunchedSite: isUnlaunchedSite( state, getSelectedSiteId( state ) ),
+	needsVerification: ! isCurrentUserEmailVerified( state ),
 } ) )( localize( SiteSettingsImport ) );
