@@ -6,6 +6,8 @@
 
 import validator from 'is-my-json-valid';
 import {
+	findKey,
+	flatMap,
 	forEach,
 	get,
 	includes,
@@ -501,17 +503,15 @@ function createCombinedReducer( validatedReducers ) {
 		}
 
 		if ( action.type === 'INITIALIZE_REDUCER_STATE' ) {
-			if ( ! find( validatedReducers, reducer => reducer.storageKey === action.key ) ) {
+			// Find if any of the reducers matches the desired storageKey
+			const reducerKey = findKey( validatedReducers, { storageKey: action.storageKey } );
+
+			if ( ! reducerKey ) {
 				return state;
 			}
 
-			return reduce( validatedReducers, ( result, reducer, key ) => {
-				if ( reducer.storageKey === action.key ) {
-					result[ key ] = action.state;
-				} else {
-					result[ key ] = state[ key ];
-				}
-			} );
+			// Replace the value for the key we want to init with action.state. Leave other keys intact.
+			return mapValues( state, ( value, key ) => ( key === reducerKey ? action.state : value ) );
 		}
 
 		return combined( state, action );
@@ -534,6 +534,10 @@ function createCombinedReducer( validatedReducers ) {
 			}
 
 			const newReducer = existingReducer.addReducer( restKeys, reducer );
+
+			// Preserve the storageKey of the updated reducer
+			newReducer.storageKey = existingReducer.storageKey;
+
 			return createCombinedReducer( { ...validatedReducers, [ key ]: newReducer } );
 		}
 
@@ -542,7 +546,24 @@ function createCombinedReducer( validatedReducers ) {
 			( subreducer, subkey ) => combineReducers( { [ subkey ]: subreducer } ),
 			validateReducer( reducer )
 		);
+
 		return createCombinedReducer( { ...validatedReducers, [ key ]: newReducer } );
+	};
+
+	combinedWithSerializer.getStorageKeys = function() {
+		return flatMap( validatedReducers, reducer => {
+			const storageKeys = [];
+
+			if ( reducer.storageKey ) {
+				storageKeys.push( { storageKey: reducer.storageKey, reducer } );
+			}
+
+			if ( reducer.getStorageKeys ) {
+				storageKeys.push( ...reducer.getStorageKeys() );
+			}
+
+			return storageKeys;
+		} );
 	};
 
 	return combinedWithSerializer;

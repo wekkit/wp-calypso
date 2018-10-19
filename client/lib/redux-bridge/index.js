@@ -49,10 +49,14 @@ export function reduxDispatch( ...args ) {
 	return reduxStore.dispatch( ...args );
 }
 
-export async function reduxAddReducer( key, reducer ) {
+export async function addReduxReducer( key, reducer ) {
 	reduxStore.addReducer( key, reducer );
-	const state = await getStateFromLocalStorage( reducer, key );
-	reduxStore.dispatch( { type: 'INITIALIZE_REDUCER_STATE', key, state } );
+	if ( reducer.storageKey ) {
+		const state = await getStateFromLocalStorage( reducer, reducer.storageKey );
+		if ( state ) {
+			reduxStore.dispatch( { type: 'INITIALIZE_REDUCER_STATE', key: reducer.storageKey, state } );
+		}
+	}
 }
 
 function markedFluxAction( action ) {

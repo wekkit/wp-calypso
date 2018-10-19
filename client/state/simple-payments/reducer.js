@@ -4,9 +4,12 @@
  * Internal dependencies
  */
 
-import { combineReducers } from 'state/utils';
+import { combineReducers, withStorageKey } from 'state/utils';
 import productList from './product-list/reducer';
 
-export default combineReducers( {
-	productList,
-} );
+export default withStorageKey(
+	'simple-payments',
+	combineReducers( {
+		productList,
+	} )
+);

@@ -61,7 +61,6 @@ function createPageDefinition( path, sectionDefinition ) {
 				return activateSection( sectionDefinition, context, next );
 			} )
 			.catch( error => {
-				console.log( 'caught error while preloading', sectionDefinition.module);
 				console.error( error ); // eslint-disable-line
 				if ( ! LoadingError.isRetry() && process.env.NODE_ENV !== 'development' ) {
 					LoadingError.retry( sectionDefinition.name );

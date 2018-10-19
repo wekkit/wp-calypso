@@ -40,10 +40,10 @@ import StatsController from './app/store-stats/controller';
 import StoreSidebar from './store-sidebar';
 import { tracksStore } from './lib/analytics';
 import { makeLayout, render as clientRender } from 'controller';
-import { reduxAddReducer } from 'lib/redux-bridge';
+import { addReduxReducer } from 'lib/redux-bridge';
 
 async function initExtension() {
-	reduxAddReducer( [ 'extensions', 'woocommerce' ], reducer );
+	await addReduxReducer( [ 'extensions', 'woocommerce' ], reducer );
 	installActionHandlers();
 }
 
@@ -259,7 +259,9 @@ function addTracksContext( context, next ) {
 	next();
 }
 
-export default function() {
+export default async function() {
+	await initExtension();
+
 	page( '/store', siteSelection, sites, makeLayout, clientRender );
 
 	// Add pages that use the store navigation
@@ -292,7 +294,3 @@ export default function() {
 
 	page( '/store/*', notFoundError, makeLayout, clientRender );
 }
-
-// TODO: This could probably be done in a better way through the same mechanisms
-// that bring in the rest of the extension code. Maybe extension-loader?
-initExtension();
