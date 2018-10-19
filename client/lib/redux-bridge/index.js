@@ -51,10 +51,11 @@ export function reduxDispatch( ...args ) {
 
 export async function addReduxReducer( key, reducer ) {
 	reduxStore.addReducer( key, reducer );
-	if ( reducer.storageKey ) {
-		const state = await getStateFromLocalStorage( reducer, reducer.storageKey );
-		if ( state ) {
-			reduxStore.dispatch( { type: 'INITIALIZE_REDUCER_STATE', key: reducer.storageKey, state } );
+	const { storageKey } = reducer;
+	if ( storageKey ) {
+		const storedState = await getStateFromLocalStorage( reducer, storageKey );
+		if ( storedState ) {
+			reduxStore.dispatch( { type: 'APPLY_STORED_STATE', storageKey, storedState } );
 		}
 	}
 }

@@ -229,14 +229,14 @@ async function getInitialStoredState( initialReducer ) {
 	console.log( 'storage keys in initial reducer:', map( storageKeys, 'storageKey' ) );
 
 	const loadTasks = map( storageKeys, async ( { storageKey, reducer } ) => {
-		const storedStateForKey = await getStateFromLocalStorage( reducer, storageKey );
-		console.log( 'state from storage:', storageKey, storedStateForKey );
+		const storedState = await getStateFromLocalStorage( reducer, storageKey );
+		console.log( 'state from storage:', storageKey, storedState );
 
-		if ( storedStateForKey ) {
+		if ( storedState ) {
 			initialStoredState = initialReducer( initialStoredState, {
-				type: 'INITIALIZE_REDUCER_STATE',
+				type: 'APPLY_STORED_STATE',
 				storageKey,
-				state: storedStateForKey,
+				storedState,
 			} );
 		}
 	} );

@@ -502,7 +502,7 @@ function createCombinedReducer( validatedReducers ) {
 			);
 		}
 
-		if ( action.type === 'INITIALIZE_REDUCER_STATE' ) {
+		if ( action.type === 'APPLY_STORED_STATE' ) {
 			// Find if any of the reducers matches the desired storageKey
 			const reducerKey = findKey( validatedReducers, { storageKey: action.storageKey } );
 
@@ -511,7 +511,10 @@ function createCombinedReducer( validatedReducers ) {
 			}
 
 			// Replace the value for the key we want to init with action.state. Leave other keys intact.
-			return mapValues( state, ( value, key ) => ( key === reducerKey ? action.state : value ) );
+			return mapValues(
+				state,
+				( value, key ) => ( key === reducerKey ? action.storedState : value )
+			);
 		}
 
 		return combined( state, action );
